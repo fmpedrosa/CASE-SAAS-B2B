@@ -1,5 +1,5 @@
 # company
-Case desenvolvido para a company.
+Case desenvolvido para análise da jornada de trial de um plataforma de SAAS B2B para PME, que objetiva observar métricas relacionadas à aquisição de cliente, consistindo em uma análise de dados exploratória com essa base, de forma a identificar gargalos e oportunidades para otimizar a entrada de negócios na plataforma. 
 
 
 ## Notebooks
