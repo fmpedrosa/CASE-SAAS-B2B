@@ -1,0 +1,67 @@
+with first_subscription as (
+SELECT DISTINCT 
+CLINIC_ID, 
+MIN(SUBSCRIPTION_START_DATE) AS FIRST_SUBSCRIPTION_START_DATE
+FROM capim.subscriptions_table
+WHERE CHECKOUT_STATUS in ('open', 'complete')
+GROUP BY CLINIC_ID
+
+)
+
+, subscription_status as (
+SELECT c.*,
+ fs.FIRST_SUBSCRIPTION_START_DATE,
+ CASE WHEN fs.FIRST_SUBSCRIPTION_START_DATE is not null THEN  True else False end  as IS_CONVERTED,
+from capim.clinics_table c
+left join  first_subscription fs ON fs.CLINIC_ID = c.CLINIC_ID
+where TRIAL_START_DATE is not null
+)
+
+, data as (
+
+  SELECT
+  FEATURE,
+  IS_CONVERTED,
+  AVG(ACTIVE_USER) as ACTIVE_USER
+
+  FROM (
+    SELECT
+    d.CLINIC_ID,
+    FEATURE,
+    c.IS_CHAIN_CLINIC,
+    s.IS_CONVERTED,
+    c.TRIAL_DURATION,
+    SUM(ACTIVE_USER)/c.TRIAL_DURATION * 100 AS ACTIVE_USER
+    FROM (  
+      SELECT 
+      a.CLINIC_ID,
+      EXTRACT(DATE FROM ACTIVITY_AT) as DATE,
+      EXTRACT(DAYOFWEEK FROM ACTIVITY_AT) as DAY_OF_WEEK,
+      a.FEATURE,
+      MAX(CASE WHEN module IS NOT NULL THEN 1 else 0 end) as ACTIVE_USER
+      FROM `capim-404203.capim.activity_table` a
+      GROUP BY 1,2,3,4
+      ORDER BY DATE DESC
+    ) d
+
+    INNER JOIN capim.clinics_table c on d.CLINIC_ID = c.CLINIC_ID
+    LEFT JOIN subscription_status s on d.CLINIC_ID = s.CLINIC_ID
+    WHERE c.IS_CHAIN_CLINIC is false
+    and c.TRIAL_DURATION > 0
+    GROUP BY 1,2,3,4,5
+  )
+  GROUP BY 1,2
+)
+
+
+SELECT * FROM
+(
+  SELECT * FROM data
+)
+PIVOT
+(
+  -- #2 aggregate
+  AVG(ACTIVE_USER) AS days_usage
+  -- #3 pivot_column
+  FOR IS_CONVERTED in (True, False)
+)

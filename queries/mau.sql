@@ -1,0 +1,24 @@
+
+SELECT
+DATE, 
+sum(ACTIVE_FINANCE) as ACTIVE_FINANCE,
+sum(ACTIVE_PATIENT) as ACTIVE_PATIENT,
+sum(ACTIVE_SETUP) as ACTIVE_SETUP,
+sum(ACTIVE_SCHEDULE) as ACTIVE_SCHEDULE,
+sum(ACTIVE_USER) as ACTIVE_USER
+FROM (
+SELECT 
+extract(MONTH from ACTIVITY_AT) as DATE, 
+CLINIC_ID,
+MAX(CASE WHEN module = 'finance' THEN 1 else 0 end) as ACTIVE_FINANCE,
+MAX(CASE WHEN module = 'patient' THEN 1 else 0 end) as ACTIVE_PATIENT,
+MAX(CASE WHEN module = 'setup' THEN 1 else 0 end ) AS ACTIVE_SETUP,
+MAX(CASE WHEN module = 'schedule' THEN 1 else 0 end) as ACTIVE_SCHEDULE,
+MAX(CASE WHEN module IS NOT NULL THEN 1 else 0 end) as ACTIVE_USER
+FROM `capim-404203.capim.activity_table` 
+GROUP BY 1,2
+ORDER BY DATE DESC)
+GROUP BY 1
+
+
+
